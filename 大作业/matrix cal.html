@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- css调整按钮以及界面的形式观感 -->
+<head>
+    <meta charset="UTF-8">
+    <title>sparse matrix calculator</title>
+    <style>
+		body{
+			background-color: #f2f2f2;
+		}
+
+		*{
+			text-align: center;
+		}
+
+        .but{
+            width: 100px;
+			height: 50px;
+			background-color: #f5c33a;
+			color: white;
+			padding: 8px 10px;
+			margin: 2px 0;
+			border: none;
+			border-radius: 4px;
+			font-size: 1.5em;
+			user-select: none;
+			cursor: pointer;
+        }
+        
+		.wrapper{	
+			width: 70%;
+			transform: translateX(15vw);
+			height: 100%;
+			display: flex;
+			flex-direction: row;
+			justify-content: space-around;
+			align-items: center;
+		}
+
+		input{
+			width: 100px;
+		}
+
+		table{
+			transform: translateX(75%);
+			margin: 40px 0;
+		}
+
+		.opration{
+			width: auto;
+			height: 2em;
+			background-color: #60cd68;
+			color: white;
+			padding: 6px 12px;
+			margin: 8px;
+			border: none;
+			border-radius: 6px;
+			display: inline-block;
+			line-height: 2em;
+			flex-direction: column;
+			align-items: center;
+			user-select: none;
+			cursor: pointer;
+		}
+
+		table{
+			border-collapse: collapse;
+			border: 1px solid #000;
+			width: 40%;
+		}
+		td{
+			border: 1px solid #000;
+			font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+			text-align: center;
+			padding: 5px 10px;
+		}
+		th{
+			border: 1px solid #000;
+			font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+			text-align: center;
+		}
+       
+
+    </style>
+</head>
+
+<body>
+<!-- html下面是界面按钮的设置 -->
+    
+    <h2>choose your function</h2>
+
+    <div class="wrapper">
+        <button class="but" onclick="init_table(2);opcode=1;">A+B</button>
+        <button class="but" onclick="init_table(2);opcode=2;">A-B</button>
+        <button class="but" onclick="init_table(2);opcode=3;mul_flag=getMatricesSize();">A*B</button>
+        <button class="but" onclick="init_table(1);opcode=4;">A<sup>T</sup></button>
+        <button class="but" onclick="init_table(1);opcode=5;inv_flag=getMatrixSize();">A<sup>-1</sup></button>
+		<button class="but" onclick="init_table(1);opcode=6;inv_flag=getMatrixSize();">|A|</button>
+		<button class="but" onclick="reset()" style="background-color: #fa6666;">RESET</button>
+		<button class="but" onclick="display(calc());"  style="background-color: #60cd68;"">SOLVE</button>
+    </div>
+
+    
+    <div id="table_wrapper">
+	</div>
+	
+
+	<script>
+		var wrapper = document.getElementById("table_wrapper");
+		var flag = 0;//区分是否点击了功能的信号
+		var opcode = 0;//区分不同的功能选择信号
+		var mul_flag = 1;//标志是否选用的是乘法功能
+		var inv_flag = 1;//标志是否选用的是求逆或转置功能
+
+		function reset(){
+			flag = 0;
+			mul_flag = 1;
+			inv_flag = 1;
+			wrapper.innerHTML = '';
+		}
+
+		//以下是矩阵的输入界面，包含增添删除功能，防止输错
+		function init_table(table_num){
+			if(flag == 0){
+				flag = 1;
+				for(let k = 0; k < table_num; k++){
+					let tbody = document.createElement('tbody');
+					let thead = document.createElement('tr');
+					let td0 = document.createElement('td');
+					td0.innerHTML = '';
+					let td1 = document.createElement('td');
+					td1.innerHTML = 'row';
+					let td2 = document.createElement('td');
+					td2.innerHTML = 'col';
+					let td3 = document.createElement('td');
+					td3.innerHTML = 'value';
+					thead.appendChild(td0);
+					thead.appendChild(td1);
+					thead.appendChild(td2);
+					thead.appendChild(td3);
+					tbody.appendChild(thead);
+
+
+					var table = document.createElement('table');
+					table.appendChild(tbody);
+					wrapper.appendChild(table);
+					var p = document.createElement('p');
+					p.classList.add('opration');
+					p.addEventListener('click', function(){
+						appendRow(k);
+					});
+					p.innerHTML= '添加';
+					wrapper.appendChild(p);
+
+					var p = document.createElement('p');
+					p.classList.add('opration');
+					p.addEventListener('click', function(){
+						removeRow(k);
+					});
+					p.innerHTML= '删除';
+					wrapper.appendChild(p);
+
+					appendRow(k);
+					appendRow(k);
+					appendRow(k);
+				}
+			}else{
+				alert("请先重置");
+			}
+		}
+
+
+		//以下是增添一整行的函数，并且根据已有表格调整前缀
+		function appendRow(n){
+			var tab = document.getElementsByTagName("tbody");
+			var tds = new Array(5);
+			let m;
+			for(let i = 0; i <= 3; i++){
+				tds[i] = document.createElement('td');
+				if(i == 0){
+					m = tab[n].childNodes.length;
+					tds[i].innerHTML = String(m);
+				}
+				else
+					tds[i].innerHTML = '<input type="number"/>';
+			}
+			
+			var trr =  document.createElement('tr');
+			for(let i = 0; i <= 3; i++){
+				trr.appendChild(tds[i]);
+			}
+			tab[n].appendChild(trr);
+
+		}
+
+		//以下是删除一整行的函数，并且根据已有表格调整前缀
+		function removeRow(n){
+			var tab = document.getElementsByTagName("tbody");
+			var l = tab[n].childNodes.length;
+			if(l > 2){
+				var last = tab[n].childNodes[l-1];
+				tab[n].removeChild(last);
+			}
+		}
+
+		//将输入表格的值转化为三元组
+		function getArray(n){
+			var tab = document.getElementsByTagName("tbody");
+			var l = tab[n].childNodes.length;
+			var arr = new Array(l-1);
+			for(let i = 1; i < l; i++){
+				arr[i-1] = new Array(3);
+				for(let j = 1; j <= 3; j++){
+					arr[i-1][j-1] = Number(tab[n].childNodes[i].childNodes[j].childNodes[0].value);
+				}
+			}
+			return arr;
+		}
+		
+		//这是输出结果矩阵表格的函数
+		function display(arr){
+			var ans = document.createElement("table");
+			var l = arr.length;
+
+			let thead = document.createElement('tr');
+			let td1 = document.createElement('td');
+			td1.innerHTML = 'row';
+			let td2 = document.createElement('td');
+			td2.innerHTML = 'col';
+			let td3 = document.createElement('td');
+			td3.innerHTML = 'value';
+			thead.appendChild(td1);
+			thead.appendChild(td2);
+			thead.appendChild(td3);
+			ans.appendChild(thead);
+
+			for(let i = 0; i < l; i++){
+				var trr = document.createElement("tr");
+				for(let j = 0; j < 3; j++){
+					var tdd = document.createElement("td");
+					tdd.innerHTML = arr[i][j];
+					trr.appendChild(tdd);
+				}
+				ans.appendChild(trr);
+			}
+			wrapper.appendChild(ans);
+		}
+		
+		//这是功能区分函数
+		function calc(){
+			var arr1 = getArray(0);
+			if(opcode<4)
+				var arr2 = getArray(1);
+			var arr3 = new Array();
+			var n =0;
+			switch(opcode){
+				case 1:
+					arr3 = add(arr1, arr2);
+					break;
+				case 2:
+					arr3 = sub(arr1, arr2);
+					break;
+				case 3:
+					if(mul_flag==0){
+						arr3 = mul(arr1, arr2);
+						break;
+					}else if(mul_flag==-1){
+						alert("矩阵A的列数不等于矩阵B的行数");
+						break;
+					}
+					
+				case 4:
+					arr3 = transpose(arr1);
+					break;
+				case 5:
+					arr3 = inverse(arr1);
+					break;
+				case 6:
+					n = det(arr1);
+					alert("矩阵A的行列式为"+n);
+					break;
+			}
+			return arr3;
+		}
+
+		//加函数
+		function add(arr1, arr2){
+			var l1 = arr1.length;
+			var l2 = arr2.length;
+			var arr3 = new Array();
+			var i = 0, j = 0;
+			while(i < l1 && j < l2){
+				if(arr1[i][0] < arr2[j][0]){
+					arr3.push(arr1[i]);
+					i++;
+				}
+				else if(arr1[i][0] > arr2[j][0]){
+					arr3.push(arr2[j]);
+					j++;
+				}
+				else{
+					if(arr1[i][1] < arr2[j][1]){
+						arr3.push(arr1[i]);
+						i++;
+					}
+					else if(arr1[i][1] > arr2[j][1]){
+						arr3.push(arr2[j]);
+						j++;
+					}
+					else{
+						var temp = new Array(3);
+						temp[0] = arr1[i][0];
+						temp[1] = arr1[i][1];
+						temp[2] = arr1[i][2] + arr2[j][2];
+						if(temp[2] != 0)
+							arr3.push(temp);
+						i++;
+						j++;
+					}
+				}
+			}
+			while(i < l1){
+				arr3.push(arr1[i]);
+				i++;
+			}
+			while(j < l2){
+				arr3.push(arr2[j]);
+				j++;
+			}
+			return arr3;
+		}
+       
+		//减函数
+		function sub(arr1, arr2){
+			var l1 = arr1.length;
+			var l2 = arr2.length;
+			var arr3 = new Array();
+			var i = 0, j = 0;
+			while(i < l1 && j < l2){
+				if(arr1[i][0] < arr2[j][0]){
+					arr3.push(arr1[i]);
+					i++;
+				}
+				else if(arr1[i][0] > arr2[j][0]){
+					arr3.push(arr2[j]);
+					j++;
+				}
+				else{
+					if(arr1[i][1] < arr2[j][1]){
+						arr3.push(arr1[i]);
+						i++;
+					}
+					else if(arr1[i][1] > arr2[j][1]){
+						arr3.push(arr2[j]);
+						j++;
+					}
+					else{
+						var temp = new Array(3);
+						temp[0] = arr1[i][0];
+						temp[1] = arr1[i][1];
+						temp[2] = arr1[i][2] - arr2[j][2];
+						if(temp[2] != 0)
+							arr3.push(temp);
+						i++;
+						j++;
+					}
+				}
+			}
+			while(i < l1){
+				arr3.push(arr1[i]);
+				i++;
+			}
+			while(j < l2){
+				arr3.push(arr2[j]);
+				j++;
+			}
+			return arr3;
+		}
+
+		//转置函数
+		function transpose(arr1){
+			var l1 = arr1.length;
+			var arr3 = new Array();
+			for(let i = 0; i < l1; i++){
+				var temp = new Array(3);
+				temp[0] = arr1[i][1];
+				temp[1] = arr1[i][0];
+				temp[2] = arr1[i][2];
+				arr3.push(temp);
+			}
+			return arr3;
+		}
+
+		//由于乘法对矩阵格式有限制，先设置AB的行列数
+		var mul_A_row = 0;
+		var mul_A_col = 0;
+		var mul_B_row = 0;
+		var mul_B_col = 0;
+
+		function getMatricesSize(){
+			window.alert("请先输入矩阵A的行数和列数");
+			mul_A_row = Number(window.prompt("请输入矩阵A的行数"));
+			mul_A_col = Number(window.prompt("请输入矩阵A的列数"));
+			window.alert("请先输入矩阵B的行数和列数");
+			mul_B_row = Number(window.prompt("请输入矩阵B的行数"));
+			mul_B_col = Number(window.prompt("请输入矩阵B的列数"));
+			if(mul_A_col != mul_B_row){
+				return -1;
+			}else{
+				return 0;
+			}
+		}
+
+		//乘法函数
+		function mul(arr1, arr2) {
+    // Check if multiplication is possible
+    if (mul_A_col !== mul_B_row) {
+        throw new Error('Invalid matrices dimensions. It is not possible to multiply the matrices');
+    }
+
+    let arr3 = [];
+    let hashMap = new Map();
+
+    // Multiply each pair of values that can be multiplied and store in hashmap.
+    for (let tuple1 of arr1) {
+        for (let tuple2 of arr2) {
+            if (tuple1[1] === tuple2[0]) { // If column of first matrix equals row of second matrix
+                let row = tuple1[0];
+                let col = tuple2[1];
+                let key = `${row},${col}`;
+
+                if (!hashMap.has(key)) {
+                    hashMap.set(key, 0);
+                }
+                hashMap.set(key, hashMap.get(key) + tuple1[2] * tuple2[2]); // Add multiplied values
+            }
+        }
+    }
+
+    // Convert the hashMap to the triplet representation
+    hashMap.forEach((value, key) => {
+        let [row, col] = key.split(',').map(Number);
+        arr3.push([row, col, value]);
+    });
+
+    return arr3;
+}
+
+		
+		//只有方阵才有行列式和逆矩阵
+		function getMatrixSize(){
+			var inv_A_row = 0;
+			inv_A_row = Number(window.prompt("请输入矩阵A的行/列数"));
+			return inv_A_row;
+		}
+
+		//求逆函数
+
+
+function inverse(arr1) {
+    // 从三元组转化为矩阵
+	let n=inv_flag;
+    // 初始化单位矩阵
+    let identity = [];
+    for (let i = 0; i < n; i++) {
+        let row = Array(n).fill(0);
+        row[i] = 1;
+        identity.push(row);
+    }
+
+    // 将稀疏矩阵转换为完整矩阵
+    let matrix = Array(n).fill().map(() => Array(n).fill(0));
+    for (let i = 0; i <n; i++) {
+    matrix[arr1[i][0]-1][arr1[i][1]-1] = arr1[i][2];
+    }
+
+    // 执行高斯消元
+    for (let i = 0; i < n; i++) {
+        let max = i;
+        for (let j = i + 1; j < n; j++) {
+            if (Math.abs(matrix[j][i]) > Math.abs(matrix[max][i])) {
+                max = j;
+            }
+        }
+
+        // 交换行
+        [matrix[i], matrix[max]] = [matrix[max], matrix[i]];
+        [identity[i], identity[max]] = [identity[max], identity[i]];
+
+        // 归一化
+        let pivot = matrix[i][i];
+        for (let j = i; j < n; j++) {
+            matrix[i][j] /= pivot;
+        }
+        for (let j = 0; j < n; j++) {
+            identity[i][j] /= pivot;
+        }
+
+        // 消元
+        for (let j = 0; j < n; j++) {
+            if (j !== i) {
+                let factor = matrix[j][i];
+                for (let k = i; k < n; k++) {
+                    matrix[j][k] -= factor * matrix[i][k];
+                }
+                for (let k = 0; k < n; k++) {
+                    identity[j][k] -= factor * identity[i][k];
+                }
+            }
+        }
+    }
+
+    // 将逆矩阵转换为稀疏矩阵的三元组表示法
+    let arr3 = [];
+    for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n; j++) {
+            if (identity[i][j] !== 0) {
+                arr3.push([i+1, j+1, identity[i][j]]);
+            }
+        }
+    }
+
+    return arr3;
+}
+
+
+
+
+
+
+// JavaScript 的三元组表示法
+// arr1 = [[row, column, value], [row, column, value], ...]
+function det(arr1) {
+    // 将三元组表示法的稀疏矩阵转换为普通二维数组表示
+	var arr3 = new Array();
+	let n= inv_flag;
+    let matrix = Array(n).fill().map(() => Array(n).fill(0));
+    for (let i = 0; i <n; i++) {
+    matrix[arr1[i][0]-1][arr1[i][1]-1] = arr1[i][2];
+    }
+
+
+    var determinant = 1;
+    for(var i = 0; i < n; i++) {
+        var max = matrix[i][i];
+        var maxRow = i;
+        for(var k = i + 1; k < n; k++) {
+            if(Math.abs(matrix[k][i]) > Math.abs(max)) {
+                max = matrix[k][i];
+                maxRow = k;
+            }
+        }
+
+        // 如果最大值为0，那么行列式为0
+        if(max === 0) {
+            return 0;
+        }
+
+        // 交换行
+        if(i !== maxRow) {
+            var temp = matrix[i];
+            matrix[i] = matrix[maxRow];
+            matrix[maxRow] = temp;
+            // 每次交换行，行列式变号
+            determinant *= -1;
+        }
+
+        determinant *= max;
+
+        // 将主元变为1，其余行用这行消元
+        for(var k = i + 1; k < n; k++) {
+            var factor = matrix[k][i] / matrix[i][i];
+            for(var j = i; j < n; j++) {
+                matrix[k][j] -= factor * matrix[i][j];
+            }
+        }
+    }
+	
+	return determinant;
+}
+
+
+    </script>
+
+    
+</body>
+</html>
